@@ -189,7 +189,8 @@ module Ruby2Jar
     
     # Path to work dir, which be used to copy all neccessary files.
     # It will be set automatically and has public access only for extensions.
-    attr_accessor :build_dir
+    # Default if not set is a temp directory as found by Tempdir::Dir.tempdir
+    attr_accessor :build_base_dir
     
     # Gems, which using in program. Use +add_dependency+ to add gem.
     attr_accessor :gems
@@ -266,9 +267,10 @@ module Ruby2Jar
       end
       
       number = Time.now.to_i
+      @build_base_dir = File.expand_path(@build_base_dir) if @build_base_dir
       begin
         number += 1
-        @build_dir = File.join(Dir.tmpdir, "ruby2jar#{number}")
+        @build_dir = File.join(@build_base_dir || Dir.tmpdir, "ruby2jar#{number}")
       end while File.exist? @build_dir
       @app_dir = File.join(@build_dir, "ruby", "app")
       @gems_dir = File.join(@build_dir, "ruby", "gems")
@@ -421,6 +423,7 @@ module Ruby2Jar
       else
         `jar -cf "#{@jar}" ./`
       end
+      puts "Jar created: #{@jar}"
     end
     
     # Delete all temporal files
@@ -428,7 +431,7 @@ module Ruby2Jar
       if not @last_current_dir.nil?
         Dir.chdir @last_current_dir
       end
-      if not @build_dir.nil?
+      if @build_base_dir.nil?
         FileUtils.rm_r @build_dir
       end
     end
